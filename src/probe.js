@@ -16,6 +16,7 @@
 
 import { applyFingerprint, endpointFor, mintRequestId, sessionForConversation, wireFor } from './upstream.js'
 import { CODE, postStreamed } from './http.js'
+import { directInit } from './net.js'
 
 /** Public-echo sources, tried in order; any one answering is enough. */
 const ECHO_SOURCES = [
@@ -159,7 +160,7 @@ export async function detectEgress({ signal, timeoutMs = 8000 } = {}) {
       const timer = setTimeout(() => controller.abort(), timeoutMs)
       timer.unref?.()
       signal?.addEventListener('abort', () => controller.abort(), { once: true })
-      const response = await fetch(source.url, { signal: controller.signal, redirect: 'error', headers: { accept: 'application/json' } })
+      const response = await fetch(source.url, { signal: controller.signal, redirect: 'error', headers: { accept: 'application/json' }, ...directInit() })
       clearTimeout(timer)
       if (!response.ok) continue
       const payload = await response.json()

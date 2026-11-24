@@ -32,6 +32,7 @@ import { buildCatalog, parseListing } from './src/catalog.js'
 import { STATE, detectEgress, probeCatalog } from './src/probe.js'
 import { generateKey, startForwardServer, toOpenAiUsage } from './src/forward.js'
 import { CODE, UpstreamError, getJson } from './src/http.js'
+import { directFetch } from './src/net.js'
 import { mintRequestId, sessionForConversation } from './src/upstream.js'
 import { DEFAULT_LEVEL, budgetLadder } from './src/effort.js'
 import { toToolDefs } from './src/messages.js'
@@ -161,6 +162,7 @@ export function apply(ctx, config) {
   const feed = new AnnouncementFeed({
     settings: () => settings.get(),
     cacheFile: path.join(dataDir, 'feed.json'),
+    fetchImpl: directFetch,
     onArrival: items => {
       push.emit('announcements', { items, unread: feedView().unread })
       refreshUpdatePush?.()
@@ -183,6 +185,7 @@ export function apply(ctx, config) {
     pkgDir: PKG_DIR,
     dataDir,
     settings: () => settings.get(),
+    fetchImpl: directFetch,
     log: message => logger.info?.(message),
   })
   /** Update versions we have already pushed a notification for. */

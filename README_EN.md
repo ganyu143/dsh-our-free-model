@@ -183,6 +183,18 @@ POST /v1/responses
 your current exit. Toggling a VPN and re-probing moves region-gated models
 between the two groups on its own.
 
+**No machine proxy.** The plugin's own egress — model calls, availability probes,
+announcements and upgrades — goes **direct**, never through the machine's
+`HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`. A harness started under
+`NODE_USE_ENV_PROXY=1` has its global dispatcher replaced with that proxy at
+bootstrap, so a plugin writing `NO_PROXY` at mount time is already too late;
+instead the plugin borrows undici's own `no_proxy` agent per request, which
+covers this plugin's requests and leaves the rest of the process alone. Set
+`OUR_FREE_MODEL_USE_ENV_PROXY=1` to put the machine's proxy back in the path
+(for a network where only the proxy routes out). One consequence:
+`raw.githubusercontent.com` is proxy-only on some networks, so announcements and
+updates fall back to the jsdelivr mirror that is reachable directly.
+
 **Receive announcements.** Everything is automatic: after the owner pushes, a
 running installation picks the item up within one poll cycle (30 minutes by
 default, or immediately via *Check for new announcements*). Regular items raise
@@ -214,6 +226,8 @@ src/effort.js   effort level -> output budget
 src/forward.js  standalone OpenAI-compatible listener
 src/trust.js    request trust fence for the plugin's routes (connection bridge
                 + structural fallback)
+src/net.js      egress policy: borrows undici's no_proxy agent so this plugin's
+                requests skip the machine's environment proxy
 src/push.js     SSE push hub: arrivals, update availability, upgrade done
 src/feed.js     remote announcement feed: multi-source fetch, validation, cache,
                 arrival detection

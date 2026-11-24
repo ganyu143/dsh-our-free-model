@@ -169,6 +169,14 @@ POST /v1/responses
 **重新核对地区**：点"重新探测可用性"，会按当前出口重跑探测。开/关 VPN 后再点一次，
 地区受限模型会在两个分组之间自动迁移。
 
+**不走本机代理**：插件的出网——模型请求、可用性探测、公告与升级——**一律直连**，不经过机器的
+`HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`。harness 若在 `NODE_USE_ENV_PROXY=1` 下启动，Node
+在进程启动时就把全局 dispatcher 换成了代理，插件挂载后再写 `NO_PROXY` 已经太晚；所以插件改为
+按请求借用 undici 自己为 `no_proxy` 准备的那个 agent，只覆盖本插件的请求，进程里其它流量照旧。
+要让插件重新走机器的代理（例如只有代理能出网），设 `OUR_FREE_MODEL_USE_ENV_PROXY=1`。附带后果：
+`raw.githubusercontent.com` 在部分网络下只能经代理访问，直连时公告与升级会自动落到实测可直连的
+jsdelivr 镜像。
+
 **接收公告**：一切自动。仓库主人推送新公告后，运行中的插件在一个轮询周期内（默认
 30 分钟，也可在公告中心点"检查新公告"立即拉取）收到通知：普通公告弹 toast，
 `urgent` 级别直接全屏弹窗，两者都会出现在公告中心并保留未读标记。想同时收到
@@ -194,6 +202,7 @@ src/messages.js harness 消息 -> 各线协议形态，外加工具调用配对�
 src/effort.js   思考档位 -> 输出预算
 src/forward.js  独立的 OpenAI 兼容监听器
 src/trust.js    插件路由的请求信任围栏（connection 服务桥 + 结构化围栏）
+src/net.js      出网策略：借用 undici 的 no_proxy agent，本插件的请求不走机器的环境代理
 src/push.js     SSE 推送枢纽：公告到达、更新可用、升级完成
 src/feed.js     远程公告 feed：多源拉取、校验、缓存、到达检测
 src/updater.js  应用内升级：清单校验、SHA-256 分级校验、备份、原子替换、回滚
